@@ -11,7 +11,7 @@ Contents:
 - `1password_example.md` — Example showing how to use 1Password CLI to store & retrieve the Hetzner API token.
 - `README.md` — This file.
 
-All instructions use **Vim** when editing files (you asked for Vim as default editor).
+All instructions use **Vim** when editing files.
 
 ## Features
 - Updates A and AAAA records at Hetzner based on the machine's public IP.
