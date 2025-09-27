@@ -46,6 +46,3 @@ See `1password_example.md` for step-by-step examples of storing and retrieving t
 - Never commit your API token to source control.
 - Prefer using a Hetzner token with minimal privileges.
 - The installer creates files with restrictive permissions (`600`/`750`) and the script does not log secrets.
-
----
-If you'd like, I can also produce a Docker image, a systemd-only variant, or adapt the package for another distro. Enjoy — and let me know if you want me to change the system user name or interval.
