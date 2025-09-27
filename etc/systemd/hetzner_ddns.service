@@ -1,0 +1,10 @@
+[Unit]
+Description=Hetzner DDNS updater
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/hetzner_ddns.py
+Restart=on-failure
+User=regen

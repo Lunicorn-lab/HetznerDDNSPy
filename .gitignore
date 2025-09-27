@@ -1,0 +1,31 @@
+# Ignore local config with secrets
+*.conf
+!etc/hetzner_ddns.conf.example
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pkl
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Logs
+*.log
+
+# Systemd runtime junk (not in repo)
+*.service~
+*.timer~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor swaps (Vim!)
+*.swp
+*.swo
+*.swn

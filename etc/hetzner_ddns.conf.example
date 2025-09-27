@@ -1,0 +1,9 @@
+# Example config for hetzner_ddns
+# Optional: you can leave API_TOKEN blank and use 1Password instead.
+API_TOKEN=""
+ZONE="example.com"
+RECORDS="homelab media vpn @"   # space-separated, use @ for root
+IPV4=true
+IPV6=true
+INTERVAL=60
+TTL=60
