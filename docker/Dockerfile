@@ -19,7 +19,7 @@ RUN python -m venv /opt/venv \
 
 # ---- runtime ---------------------------------------------------------------
 # Distroless nonroot: no shell, no package manager, UID/GID 65532.
-FROM gcr.io/distroless/python3-debian12:nonroot@sha256:e5e96e0d64ed54d0d1b49c1e9d9c84e50f92b8d6ef9ff10f23cde27d54e7b9b2
+FROM gcr.io/distroless/python3-debian12:nonroot@sha256:7d1042ce588ab97019fe95c24ffca7bc5a82ccdac572511d5e09bda4435c89c5
 
 ARG BUILD_DATE
 ARG VCS_REF
