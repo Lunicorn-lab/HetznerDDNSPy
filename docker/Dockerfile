@@ -31,7 +31,7 @@ LABEL org.opencontainers.image.title="hetzner-ddns" \
       org.opencontainers.image.created="${BUILD_DATE}" \
       org.opencontainers.image.revision="${VCS_REF}" \
       org.opencontainers.image.source="https://github.com/Lunicorn/HetznerDDNSPy" \
-      org.opencontainers.image.licenses="MIT" \
+      org.opencontainers.image.licenses="GPL-3.0-or-later" \
       org.opencontainers.image.base.name="gcr.io/distroless/python3-debian12:nonroot"
 
 COPY --from=builder /opt/venv /opt/venv

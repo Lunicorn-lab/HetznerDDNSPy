@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Configuration loading with strict precedence and validation.
 
 Precedence (highest wins):

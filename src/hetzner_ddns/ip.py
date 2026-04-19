@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Public-IP discovery with provider fallback and strict validation."""
 
 from __future__ import annotations

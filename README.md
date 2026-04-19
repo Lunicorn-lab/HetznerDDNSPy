@@ -8,7 +8,7 @@ Runs as a hardened systemd timer, a distroless container, or both.
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/Lunicorn/HetznerDDNSPy/badge)](https://securityscorecards.dev/viewer/?uri=github.com/Lunicorn/HetznerDDNSPy)
 [![PyPI](https://img.shields.io/pypi/v/hetzner-ddns.svg)](https://pypi.org/project/hetzner-ddns/)
 [![Python](https://img.shields.io/pypi/pyversions/hetzner-ddns.svg)](https://pypi.org/project/hetzner-ddns/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![License: GPL v3+](https://img.shields.io/badge/License-GPLv3%2B-blue.svg)](LICENSE)
 [![Coverage](https://img.shields.io/badge/coverage-%E2%89%A590%25-brightgreen.svg)](#testing)
 
 ---
@@ -285,7 +285,13 @@ docs/                 architecture, security, runbook, ADRs
 
 ## License
 
-[MIT](LICENSE) © HetznerDDNSPy contributors.
+[GPL-3.0-or-later](LICENSE) © HetznerDDNSPy contributors.
+
+This program is free software: you can redistribute it and/or modify it
+under the terms of the GNU General Public License as published by the
+Free Software Foundation, either version 3 of the License, or (at your
+option) any later version. It is distributed **without any warranty** —
+see the [LICENSE](LICENSE) for full terms.
 
 Hetzner and the Hetzner DNS API are trademarks of their respective owners.
 This project is not affiliated with or endorsed by Hetzner Online GmbH.

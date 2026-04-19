@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Persistent IP-state cache — avoids unnecessary API calls when the IP is unchanged."""
 
 from __future__ import annotations

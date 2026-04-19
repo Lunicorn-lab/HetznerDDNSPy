@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Logging setup with secret redaction and optional JSON output."""
 
 from __future__ import annotations

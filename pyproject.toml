@@ -7,7 +7,8 @@ name = "hetzner-ddns"
 version = "2.0.0"
 description = "Minimal, secure DynDNS updater for the Hetzner DNS API — stdlib-only runtime."
 readme = "README.md"
-license = { file = "LICENSE" }
+license = "GPL-3.0-or-later"
+license-files = ["LICENSE"]
 requires-python = ">=3.10"
 authors = [{ name = "HetznerDDNSPy contributors" }]
 keywords = ["hetzner", "dns", "dyndns", "ddns", "systemd"]
@@ -15,7 +16,7 @@ classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Environment :: No Input/Output (Daemon)",
     "Intended Audience :: System Administrators",
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
     "Operating System :: POSIX :: Linux",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",

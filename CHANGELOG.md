@@ -6,6 +6,16 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+- **BREAKING**: Relicensed from **MIT** to **GPL-3.0-or-later**. Downstream
+  consumers redistributing this project (source or binary) must now comply
+  with the GPL. The `LICENSE` file now carries the canonical GPL-3 text;
+  `pyproject.toml`, the OCI image label, the README footer/badge, and every
+  runtime source file carry matching SPDX identifiers.
+- Dependency-review deny-list updated to drop `GPL-3.0-only` (the project
+  itself is now GPL-3, so GPL-3 dependencies are compatible). `AGPL-*-or-later`
+  and `GPL-2.0-only` remain blocked.
+
 ## [2.0.0] — 2026-04-19
 
 ### Added

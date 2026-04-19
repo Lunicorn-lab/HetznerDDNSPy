@@ -46,7 +46,8 @@ they prefer otherwise.
 - **pip-audit** + **OSV Scanner** on every PR.
 - **Dependabot** weekly updates for `pip`, `github-actions`, `docker`.
 - **GitHub Dependency Review** blocks PRs introducing high-severity CVEs or
-  disallowed licences (AGPL, GPL).
+  GPL-incompatible licences (AGPL-1.0/3.0-or-later, GPL-2.0-only). The
+  project itself is GPL-3.0-or-later, so GPL-3 dependencies are allowed.
 - **OpenSSF Scorecard** runs weekly.
 - **SLSA Level 3 provenance** attached to every tagged release.
 - **Sigstore cosign** signs container images keyless via OIDC.

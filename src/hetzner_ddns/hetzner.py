@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Hetzner DNS API client — minimal, retrying, TLS-verified."""
 
 from __future__ import annotations

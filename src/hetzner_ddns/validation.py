@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Strict input validation — defence in depth against API injection & config abuse."""
 
 from __future__ import annotations
