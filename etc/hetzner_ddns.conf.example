@@ -1,9 +1,38 @@
-# Example config for hetzner_ddns
-# Optional: you can leave API_TOKEN blank and use 1Password instead.
+# ============================================================================
+# Hetzner DDNS — example configuration
+# ----------------------------------------------------------------------------
+# Install this file as /usr/local/etc/hetzner_ddns.conf (mode 0600, root:root).
+# Any value below can also be set via environment variables (env wins).
+# ============================================================================
+
+# Hetzner DNS API token. Leave empty to fetch from 1Password CLI.
+# Create at: https://dns.hetzner.com/settings/api-token
 API_TOKEN=""
+
+# Your DNS zone (apex domain) as configured at Hetzner.
 ZONE="example.com"
-RECORDS="homelab media vpn @"   # space-separated, use @ for root
+
+# Space-separated list of record labels to keep in sync.
+# Use "@" for the zone apex. Each record gets A and/or AAAA as appropriate.
+RECORDS="@ www homelab"
+
+# Enable IPv4 (A records) / IPv6 (AAAA records).
 IPV4=true
 IPV6=true
-INTERVAL=60
-TTL=60
+
+# Daemon mode only — interval between reconciliation passes (seconds).
+# Ignored when the script is invoked with --once (the default for the timer).
+INTERVAL=300
+
+# TTL set on records created or updated by this tool (seconds, 60–86400).
+TTL=300
+
+# Where to persist the last observed public IPs (avoids needless API calls).
+STATE_DIR=/var/lib/hetzner_ddns
+
+# Logging. LOG_FORMAT=json emits structured logs (good for journald/Loki).
+LOG_LEVEL=INFO
+LOG_FORMAT=text
+
+# Set to 1 to skip the 1Password CLI lookup even if `op` is on PATH.
+# HETZNER_DDNS_DISABLE_OP=0

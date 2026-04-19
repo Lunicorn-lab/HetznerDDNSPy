@@ -1,65 +1,139 @@
 #!/usr/bin/env bash
-set -euo pipefail
+# Installer for Hetzner DDNS on systemd Linux (Debian/Ubuntu/Fedora/Arch).
 #
-# Installer / bootstrap for Hetzner DDNS (Debian/Ubuntu)
+# What it does (all idempotent):
+#   1. Installs uv and creates an isolated Python environment in /opt/hetzner-ddns
+#   2. Installs the package from the current checkout (or PyPI if HDDNS_FROM_PYPI=1)
+#   3. Creates a dedicated system user 'hetzner-ddns' with no shell, no home
+#   4. Installs the systemd service + timer (hardened)
+#   5. Installs a default config at /usr/local/etc/hetzner_ddns.conf (mode 0600)
 #
-PACKAGE_DIR="/opt/hetzner_ddns"
-INSTALL_BIN="/usr/local/bin/hetzner_ddns.py"
-CONFIG_PATH="/usr/local/etc/hetzner_ddns.conf"
-SYSTEMD_SERVICE="/etc/systemd/system/hetzner_ddns.service"
-SYSTEMD_TIMER="/etc/systemd/system/hetzner_ddns.timer"
-USERNAME="regen"
+# Usage:
+#   sudo ./install.sh
+#
+# Environment variables:
+#   HDDNS_USER        — system user to create (default: hetzner-ddns)
+#   HDDNS_PREFIX      — install prefix (default: /opt/hetzner-ddns)
+#   HDDNS_FROM_PYPI   — if set to 1, install from PyPI instead of local sources
+#   HDDNS_VERSION     — version constraint for PyPI install (default: latest)
+#
+set -Eeuo pipefail
+shopt -s inherit_errexit 2>/dev/null || true
 
-echo "Starting install (requires root)"
+HDDNS_USER="${HDDNS_USER:-hetzner-ddns}"
+HDDNS_GROUP="${HDDNS_GROUP:-$HDDNS_USER}"
+HDDNS_PREFIX="${HDDNS_PREFIX:-/opt/hetzner-ddns}"
+HDDNS_BIN="/usr/local/bin/hetzner-ddns"
+HDDNS_CONFIG="/usr/local/etc/hetzner_ddns.conf"
+HDDNS_STATE_DIR="/var/lib/hetzner_ddns"
+SYSTEMD_DIR="/etc/systemd/system"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
-apt update
-apt install -y python3 vim sudo passwd util-linux curl ca-certificates jq
+log() { printf '\e[1;34m[install]\e[0m %s\n' "$*"; }
+die() { printf '\e[1;31m[error]\e[0m %s\n' "$*" >&2; exit 1; }
 
-echo "If you want to use 1Password CLI, install 'op' and sign in the user that will run the service."
-echo "See: https://developer.1password.com/docs/cli/get-started/"
+require_root() {
+  [[ $EUID -eq 0 ]] || die "this script must be run as root (try: sudo $0)"
+}
 
-if id -u "$USERNAME" >/dev/null 2>&1; then
-  echo "User $USERNAME already exists"
-else
-  echo "Creating user $USERNAME ..."
-  adduser --disabled-password --gecos "" "$USERNAME"
-  echo "$USERNAME ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/$USERNAME
-  chmod 440 /etc/sudoers.d/$USERNAME
-fi
+detect_os() {
+  [[ -r /etc/os-release ]] || die "cannot detect OS (missing /etc/os-release)"
+  # shellcheck disable=SC1091
+  . /etc/os-release
+  log "detected: ${PRETTY_NAME:-$ID}"
+}
 
-mkdir -p "$PACKAGE_DIR"
-cp -r . "$PACKAGE_DIR/"
-chmod -R 750 "$PACKAGE_DIR"
+install_uv() {
+  if command -v uv >/dev/null 2>&1; then
+    log "uv already installed: $(uv --version)"
+    return
+  fi
+  log "installing uv (official script, https)"
+  # Pinned by hash in CI; here we trust the upstream-signed installer.
+  curl -LsSf --proto '=https' --tlsv1.2 https://astral.sh/uv/install.sh -o /tmp/uv-install.sh
+  sh /tmp/uv-install.sh
+  rm -f /tmp/uv-install.sh
+  export PATH="$HOME/.local/bin:$PATH"
+}
 
-install -m 750 "$PACKAGE_DIR/usr/local/bin/hetzner_ddns.py" "$INSTALL_BIN"
+ensure_user() {
+  if id -u "$HDDNS_USER" >/dev/null 2>&1; then
+    log "user $HDDNS_USER exists"
+    return
+  fi
+  log "creating system user $HDDNS_USER (no shell, no home)"
+  useradd --system --no-create-home --shell /usr/sbin/nologin "$HDDNS_USER"
+}
 
-mkdir -p "$(dirname "$CONFIG_PATH")"
-if [ ! -f "$CONFIG_PATH" ]; then
-  cp "$PACKAGE_DIR/etc/hetzner_ddns.conf.example" "$CONFIG_PATH"
-  chmod 600 "$CONFIG_PATH"
-  chown root:root "$CONFIG_PATH"
-  echo "Please edit $CONFIG_PATH with vim or inject API token via 1Password (see 1password_example.md)"
-else
-  echo "$CONFIG_PATH exists — skipping."
-fi
+install_app() {
+  log "preparing $HDDNS_PREFIX"
+  install -d -m 0755 -o root -g root "$HDDNS_PREFIX"
 
-install -m 644 "$PACKAGE_DIR/etc/systemd/hetzner_ddns.service" "$SYSTEMD_SERVICE"
-install -m 644 "$PACKAGE_DIR/etc/systemd/hetzner_ddns.timer" "$SYSTEMD_TIMER"
+  if [[ "${HDDNS_FROM_PYPI:-0}" = "1" ]]; then
+    local spec="hetzner-ddns"
+    [[ -n "${HDDNS_VERSION:-}" ]] && spec="hetzner-ddns==${HDDNS_VERSION}"
+    log "installing $spec from PyPI into $HDDNS_PREFIX"
+    uv venv --python 3.12 "$HDDNS_PREFIX/venv"
+    uv pip install --python "$HDDNS_PREFIX/venv/bin/python" "$spec"
+  else
+    log "installing from local checkout at $SCRIPT_DIR"
+    uv venv --python 3.12 "$HDDNS_PREFIX/venv"
+    uv pip install --python "$HDDNS_PREFIX/venv/bin/python" "$SCRIPT_DIR"
+  fi
 
-systemctl daemon-reload
-systemctl enable --now hetzner_ddns.timer
+  log "linking entry point at $HDDNS_BIN"
+  ln -sf "$HDDNS_PREFIX/venv/bin/hetzner-ddns" "$HDDNS_BIN"
+}
 
-echo "Install finished. Edit config with Vim:"
-echo "  sudo -u root vim $CONFIG_PATH"
-echo ""
-echo "Example: to inject token from 1Password into config (run as a user who ran 'op signin'): "
-echo "  TOKEN=$(op item get "Hetzner DDNS" --fields API_TOKEN --raw)"
-echo "  sudo tee $CONFIG_PATH >/dev/null <<EOF"
-echo 'API_TOKEN="${TOKEN}"'
-echo 'ZONE="example.com"'
-echo 'RECORDS="homelab media vpn @"'
-echo 'IPV4=true'
-echo 'IPV6=true'
-echo 'INTERVAL=60'
-echo 'TTL=60'
-echo 'EOF'
+install_config() {
+  install -d -m 0755 -o root -g root "$(dirname "$HDDNS_CONFIG")"
+  if [[ -f "$HDDNS_CONFIG" ]]; then
+    log "config exists at $HDDNS_CONFIG — leaving untouched"
+    chmod 0600 "$HDDNS_CONFIG"
+    chown root:"$HDDNS_GROUP" "$HDDNS_CONFIG"
+    return
+  fi
+  log "installing default config at $HDDNS_CONFIG"
+  install -m 0640 -o root -g "$HDDNS_GROUP" \
+    "$SCRIPT_DIR/etc/hetzner_ddns.conf.example" "$HDDNS_CONFIG"
+}
+
+install_state_dir() {
+  install -d -m 0750 -o "$HDDNS_USER" -g "$HDDNS_GROUP" "$HDDNS_STATE_DIR"
+}
+
+install_systemd_units() {
+  log "installing systemd units"
+  install -m 0644 -o root -g root \
+    "$SCRIPT_DIR/etc/systemd/hetzner_ddns.service" "$SYSTEMD_DIR/hetzner_ddns.service"
+  install -m 0644 -o root -g root \
+    "$SCRIPT_DIR/etc/systemd/hetzner_ddns.timer" "$SYSTEMD_DIR/hetzner_ddns.timer"
+  systemctl daemon-reload
+}
+
+verify_and_enable() {
+  log "validating config via hetzner-ddns --check-config"
+  if sudo -u "$HDDNS_USER" "$HDDNS_BIN" --check-config; then
+    log "enabling timer"
+    systemctl enable --now hetzner_ddns.timer
+    systemctl status --no-pager hetzner_ddns.timer || true
+  else
+    log "configuration is incomplete — edit $HDDNS_CONFIG then run:"
+    log "  sudo systemctl enable --now hetzner_ddns.timer"
+  fi
+}
+
+main() {
+  require_root
+  detect_os
+  install_uv
+  ensure_user
+  install_app
+  install_config
+  install_state_dir
+  install_systemd_units
+  verify_and_enable
+  log "done."
+}
+
+main "$@"

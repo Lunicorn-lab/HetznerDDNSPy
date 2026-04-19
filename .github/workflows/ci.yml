@@ -1,0 +1,294 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# Minimum permissions by default; jobs opt in to more when needed.
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  HETZNER_DDNS_DISABLE_OP: "1"
+  PYTHONDONTWRITEBYTECODE: "1"
+  PYTHONUNBUFFERED: "1"
+  FORCE_COLOR: "1"
+
+jobs:
+  # -------------------------------------------------------------------------
+  lint:
+    name: Lint & format
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: step-security/harden-runner@v2
+        with: { egress-policy: audit }
+      - uses: actions/checkout@v4
+        with: { persist-credentials: false }
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          python-version: "3.12"
+      - run: uv sync --group lint
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+
+  # -------------------------------------------------------------------------
+  typecheck:
+    name: Type-check (mypy strict)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: step-security/harden-runner@v2
+        with: { egress-policy: audit }
+      - uses: actions/checkout@v4
+        with: { persist-credentials: false }
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          python-version: "3.12"
+      - run: uv sync --group lint --group test
+      - run: uv run mypy
+
+  # -------------------------------------------------------------------------
+  test:
+    name: Tests (Py ${{ matrix.python }})
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.10", "3.11", "3.12", "3.13"]
+    steps:
+      - uses: step-security/harden-runner@v2
+        with: { egress-policy: audit }
+      - uses: actions/checkout@v4
+        with: { persist-credentials: false }
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          python-version: ${{ matrix.python }}
+      - run: uv sync --group test
+      - name: Run tests with coverage
+        run: uv run pytest -ra
+      - name: Upload coverage
+        if: matrix.python == '3.12'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-xml
+          path: coverage.xml
+          retention-days: 7
+
+  # -------------------------------------------------------------------------
+  e2e:
+    name: End-to-end tests
+    runs-on: ubuntu-24.04
+    needs: [lint, typecheck]
+    steps:
+      - uses: step-security/harden-runner@v2
+        with: { egress-policy: audit }
+      - uses: actions/checkout@v4
+        with: { persist-credentials: false }
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          python-version: "3.12"
+      - run: uv sync --group test
+      - run: uv run pytest -m e2e -ra
+
+  # -------------------------------------------------------------------------
+  sast:
+    name: SAST (bandit + semgrep)
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: step-security/harden-runner@v2
+        with: { egress-policy: audit }
+      - uses: actions/checkout@v4
+        with: { persist-credentials: false }
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          python-version: "3.12"
+      - run: uv sync --group security
+      - name: Bandit (code security)
+        run: uv run bandit -r src -c pyproject.toml -f sarif -o bandit.sarif
+        continue-on-error: false
+      - name: Upload Bandit SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: bandit.sarif
+          category: bandit
+      - name: Semgrep (OWASP + Python rules)
+        uses: semgrep/semgrep-action@v1
+        with:
+          config: >-
+            p/default p/python p/owasp-top-ten p/security-audit
+            p/secrets p/supply-chain p/dockerfile
+          generateSarif: "1"
+      - name: Upload Semgrep SARIF
+        if: always() && hashFiles('semgrep.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: semgrep.sarif
+          category: semgrep
+
+  # -------------------------------------------------------------------------
+  sca:
+    name: SCA (pip-audit + OSV)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: step-security/harden-runner@v2
+        with: { egress-policy: audit }
+      - uses: actions/checkout@v4
+        with: { persist-credentials: false }
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          python-version: "3.12"
+      - run: uv sync --group security
+      - name: pip-audit
+        run: uv run pip-audit --disable-pip -l -v
+      - name: OSV scanner
+        uses: google/osv-scanner-action/osv-scanner-action@v2
+        with:
+          scan-args: |-
+            --recursive
+            --skip-git
+            ./
+
+  # -------------------------------------------------------------------------
+  secrets:
+    name: Secret scanning (gitleaks)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: step-security/harden-runner@v2
+        with: { egress-policy: audit }
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # -------------------------------------------------------------------------
+  container:
+    name: Container build + scan (Trivy + Grype)
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: step-security/harden-runner@v2
+        with: { egress-policy: audit }
+      - uses: actions/checkout@v4
+        with: { persist-credentials: false }
+      - name: Build image (local, no push)
+        run: |
+          docker build \
+            --file docker/Dockerfile \
+            --build-arg VERSION=$(grep -m1 '^version' pyproject.toml | cut -d'"' -f2) \
+            --build-arg VCS_REF=${{ github.sha }} \
+            --build-arg BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ) \
+            --tag hetzner-ddns:ci \
+            .
+      - name: Trivy vulnerability scan
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: hetzner-ddns:ci
+          format: sarif
+          output: trivy.sarif
+          severity: HIGH,CRITICAL
+          exit-code: "1"
+          ignore-unfixed: true
+      - name: Upload Trivy SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy.sarif
+          category: trivy
+      - name: Grype vulnerability scan
+        uses: anchore/scan-action@v5
+        with:
+          image: hetzner-ddns:ci
+          fail-build: true
+          severity-cutoff: high
+          output-format: sarif
+      - name: Dockerfile lint (Hadolint)
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: docker/Dockerfile
+          format: sarif
+          output-file: hadolint.sarif
+          no-fail: true
+      - name: Upload Hadolint SARIF
+        if: always() && hashFiles('hadolint.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: hadolint.sarif
+          category: hadolint
+
+  # -------------------------------------------------------------------------
+  install-script:
+    name: install.sh smoke (shellcheck)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: step-security/harden-runner@v2
+        with: { egress-policy: audit }
+      - uses: actions/checkout@v4
+        with: { persist-credentials: false }
+      - name: ShellCheck
+        uses: ludeeus/action-shellcheck@2.0.0
+        with:
+          severity: warning
+          scandir: "./"
+
+  # -------------------------------------------------------------------------
+  build:
+    name: Build sdist + wheel
+    runs-on: ubuntu-24.04
+    needs: [lint, typecheck, test]
+    steps:
+      - uses: step-security/harden-runner@v2
+        with: { egress-policy: audit }
+      - uses: actions/checkout@v4
+        with: { persist-credentials: false }
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          python-version: "3.12"
+      - run: uv build
+      - name: SBOM (CycloneDX)
+        uses: anchore/sbom-action@v0
+        with:
+          path: ./dist
+          format: cyclonedx-json
+          output-file: sbom.cdx.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: |
+            dist/
+            sbom.cdx.json
+          retention-days: 14
+
+  # -------------------------------------------------------------------------
+  all-green:
+    name: All checks passed
+    if: always()
+    needs: [lint, typecheck, test, e2e, sast, sca, secrets, container, install-script, build]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Fail if any needed job failed
+        if: |
+          contains(needs.*.result, 'failure') ||
+          contains(needs.*.result, 'cancelled')
+        run: exit 1

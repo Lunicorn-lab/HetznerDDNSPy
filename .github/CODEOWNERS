@@ -1,0 +1,8 @@
+# Every PR requires review from the owners below.
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+*                      @Lunicorn
+.github/               @Lunicorn
+docker/                @Lunicorn
+src/hetzner_ddns/**    @Lunicorn
+SECURITY.md            @Lunicorn

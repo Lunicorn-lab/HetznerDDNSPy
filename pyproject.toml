@@ -1,0 +1,233 @@
+[build-system]
+requires = ["hatchling>=1.26"]
+build-backend = "hatchling.build"
+
+[project]
+name = "hetzner-ddns"
+version = "2.0.0"
+description = "Minimal, secure DynDNS updater for the Hetzner DNS API — stdlib-only runtime."
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.10"
+authors = [{ name = "HetznerDDNSPy contributors" }]
+keywords = ["hetzner", "dns", "dyndns", "ddns", "systemd"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: No Input/Output (Daemon)",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Internet :: Name Service (DNS)",
+    "Topic :: System :: Networking",
+    "Typing :: Typed",
+]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/Lunicorn/HetznerDDNSPy"
+Repository = "https://github.com/Lunicorn/HetznerDDNSPy"
+Issues = "https://github.com/Lunicorn/HetznerDDNSPy/issues"
+Changelog = "https://github.com/Lunicorn/HetznerDDNSPy/blob/main/CHANGELOG.md"
+Security = "https://github.com/Lunicorn/HetznerDDNSPy/blob/main/SECURITY.md"
+
+[project.scripts]
+hetzner-ddns = "hetzner_ddns.cli:main"
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.9",
+    "mypy>=1.13",
+    "pre-commit>=4",
+]
+test = [
+    "pytest>=8",
+    "pytest-cov>=6",
+    "pytest-httpserver>=1.1",
+    "coverage[toml]>=7.6",
+]
+security = [
+    "bandit[toml]>=1.8",
+    "pip-audit>=2.7",
+    "semgrep>=1.100",
+]
+
+[dependency-groups]
+dev = [
+    { include-group = "lint" },
+    { include-group = "test" },
+    { include-group = "security" },
+]
+lint = [
+    "ruff>=0.9",
+    "mypy>=1.13",
+    "pre-commit>=4",
+]
+test = [
+    "pytest>=8",
+    "pytest-cov>=6",
+    "pytest-httpserver>=1.1",
+    "coverage[toml]>=7.6",
+]
+security = [
+    "bandit[toml]>=1.8",
+    "pip-audit>=2.7",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/hetzner_ddns"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "src/hetzner_ddns",
+    "etc",
+    "docker",
+    "docs",
+    "scripts",
+    "install.sh",
+    "README.md",
+    "LICENSE",
+    "SECURITY.md",
+    "CHANGELOG.md",
+]
+
+# ---------- ruff ----------
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+src = ["src", "tests"]
+extend-exclude = ["usr/local/bin/hetzner_ddns.py"]
+
+[tool.ruff.lint]
+select = [
+    "E", "W",     # pycodestyle
+    "F",          # pyflakes
+    "I",          # isort
+    "B",          # bugbear
+    "C4",         # comprehensions
+    "UP",         # pyupgrade
+    "N",          # pep8-naming
+    "S",          # bandit
+    "SIM",        # simplify
+    "RET",        # return
+    "PT",         # pytest-style
+    "PTH",        # use pathlib
+    "RUF",        # ruff-specific
+    "TRY",        # tryceratops
+    "PL",         # pylint
+    "ERA",        # no commented-out code
+    "A",          # builtin shadow
+    "YTT",        # sys.version misuse
+    "ASYNC",
+    "BLE",        # blind except
+    "DTZ",        # datetime tz
+    "G",          # logging format
+    "ISC",        # string concat
+    "LOG",        # logging
+    "PIE",
+    "SLF",        # private-member access
+    "T20",        # print
+    "TID",        # tidy imports
+]
+ignore = [
+    "TRY003",     # long messages
+    "PLR0913",    # too many args
+    "PLR2004",    # magic number (fine for tests)
+    "ISC001",     # conflicts with formatter
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "S105", "S106", "PLR2004", "SLF001"]
+"scripts/**" = ["T201", "S603", "S607"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["hetzner_ddns"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+# ---------- mypy ----------
+[tool.mypy]
+python_version = "3.10"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+extra_checks = true
+files = ["src", "tests"]
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false
+
+# ---------- pytest ----------
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--strict-config",
+    "--cov=hetzner_ddns",
+    "--cov-branch",
+    "--cov-report=term-missing",
+    "--cov-report=xml",
+    "--cov-report=html",
+]
+markers = [
+    "unit: fast, isolated unit tests",
+    "integration: tests against in-process HTTP fixtures",
+    "e2e: end-to-end scenario tests",
+    "slow: tests that take >1s",
+]
+filterwarnings = [
+    "error",
+    "ignore::DeprecationWarning:pytest_httpserver.*",
+]
+
+# ---------- coverage ----------
+[tool.coverage.run]
+branch = true
+source = ["hetzner_ddns"]
+parallel = true
+
+[tool.coverage.paths]
+source = ["src/hetzner_ddns", "*/site-packages/hetzner_ddns"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
+fail_under = 90
+exclude_also = [
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "pragma: no cover",
+]
+
+# ---------- bandit ----------
+[tool.bandit]
+exclude_dirs = ["tests", ".venv", "venv", "build", "dist"]
+severity = "medium"
+confidence = "medium"
+# Rationale for each skip lives next to the call-site in a `# nosec` comment.
+# B404: subprocess imported for 1Password CLI lookup; fixed argv, no shell.
+# B603: every subprocess.run uses a fixed argv list, never shell=True.
+# B105: "config-file-or-env" / "1password-cli" are labels, not passwords.
+# B311: random.random is used for retry jitter (not security).
+skips = ["B404", "B603", "B105", "B311"]

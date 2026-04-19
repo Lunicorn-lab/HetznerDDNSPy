@@ -1,0 +1,26 @@
+services:
+  hetzner-ddns:
+    image: ghcr.io/lunicorn/hetznerddnspy:latest
+    restart: unless-stopped
+    read_only: true
+    cap_drop: ["ALL"]
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    environment:
+      LOG_FORMAT: json
+      LOG_LEVEL: INFO
+    env_file:
+      - .env            # contains API_TOKEN, ZONE, RECORDS, ...
+    volumes:
+      - state:/var/lib/hetzner_ddns
+    command: ["--daemon"]
+    healthcheck:
+      test: ["CMD", "/opt/venv/bin/hetzner-ddns", "--check-config"]
+      interval: 5m
+      timeout: 10s
+      retries: 3
+
+volumes:
+  state:

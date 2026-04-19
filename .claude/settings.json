@@ -1,0 +1,35 @@
+{
+  "$schema": "https://raw.githubusercontent.com/anthropics/claude-code/main/schemas/settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(uv sync*)",
+      "Bash(uv run pytest*)",
+      "Bash(uv run ruff*)",
+      "Bash(uv run mypy*)",
+      "Bash(uv run bandit*)",
+      "Bash(uv run pip-audit*)",
+      "Bash(uv run hetzner-ddns --check-config*)",
+      "Bash(uv build*)",
+      "Bash(docker build*)",
+      "Bash(docker run --rm hetzner-ddns*)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git show*)",
+      "Bash(gh pr view*)",
+      "Bash(gh pr list*)",
+      "Bash(gh run list*)",
+      "Bash(gh run view*)"
+    ],
+    "deny": [
+      "Bash(sudo *)",
+      "Bash(rm -rf /*)",
+      "Bash(git push --force*)",
+      "Bash(git push -f*)"
+    ]
+  },
+  "env": {
+    "HETZNER_DDNS_DISABLE_OP": "1",
+    "PYTHONDONTWRITEBYTECODE": "1"
+  }
+}
