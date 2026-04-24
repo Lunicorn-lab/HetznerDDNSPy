@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "hetzner-ddns"
-version = "2.0.0"
+version = "3.0.0"
 description = "Minimal, secure DynDNS updater for the Hetzner DNS API — stdlib-only runtime."
 readme = "README.md"
 license = "GPL-3.0-or-later"

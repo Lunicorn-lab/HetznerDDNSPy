@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [3.0.0] — 2026-04-24
+
 ### Changed
 - **BREAKING**: Relicensed from **MIT** to **GPL-3.0-or-later**. Downstream
   consumers redistributing this project (source or binary) must now comply
