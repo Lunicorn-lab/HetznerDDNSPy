@@ -6,6 +6,16 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+- CI: pin `aquasecurity/trivy-action` to `0.33.1` and `google/osv-scanner-action`
+  to `v2.3.5` (previous tags did not resolve). Install
+  `bandit-sarif-formatter` so SARIF output works. Run the e2e job with
+  `--no-cov` to avoid the 90 % coverage gate tripping on a partial test
+  selection.
+- Release: replace the broken external SLSA generic generator reusable
+  workflow with `actions/attest-build-provenance@v2`, which produces
+  SLSA v1 build provenance natively from GitHub.
+
 ## [3.0.0] — 2026-04-24
 
 ### Changed

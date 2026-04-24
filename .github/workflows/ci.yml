@@ -98,7 +98,7 @@ jobs:
           enable-cache: true
           python-version: "3.12"
       - run: uv sync --group test
-      - run: uv run pytest -m e2e -ra
+      - run: uv run pytest -m e2e -ra --no-cov
 
   # -------------------------------------------------------------------------
   sast:
@@ -117,6 +117,8 @@ jobs:
           enable-cache: true
           python-version: "3.12"
       - run: uv sync --group security
+      - name: Install Bandit SARIF formatter
+        run: uv pip install bandit-sarif-formatter
       - name: Bandit (code security)
         run: uv run bandit -r src -c pyproject.toml -f sarif -o bandit.sarif
         continue-on-error: false
@@ -157,7 +159,7 @@ jobs:
       - name: pip-audit
         run: uv run pip-audit --disable-pip -l -v
       - name: OSV scanner
-        uses: google/osv-scanner-action/osv-scanner-action@v2
+        uses: google/osv-scanner-action/osv-scanner-action@v2.3.5
         with:
           scan-args: |-
             --recursive
@@ -201,7 +203,7 @@ jobs:
             --tag hetzner-ddns:ci \
             .
       - name: Trivy vulnerability scan
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@0.33.1
         with:
           image-ref: hetzner-ddns:ci
           format: sarif

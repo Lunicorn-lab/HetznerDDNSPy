@@ -14,7 +14,8 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       contents: read
-      id-token: write   # for sigstore
+      id-token: write      # for sigstore / attestations
+      attestations: write  # for attest-build-provenance
     outputs:
       version: ${{ steps.version.outputs.version }}
     steps:
@@ -41,6 +42,10 @@ jobs:
           path: ./dist
           format: cyclonedx-json
           output-file: sbom.cdx.json
+      - name: Attest build provenance (SLSA v1)
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: "dist/*"
       - uses: actions/upload-artifact@v4
         with:
           name: release-artifacts
@@ -48,19 +53,6 @@ jobs:
             dist/
             sbom.spdx.json
             sbom.cdx.json
-
-  # -------------------------------------------------------------------------
-  provenance:
-    name: SLSA provenance (Level 3)
-    needs: build
-    permissions:
-      id-token: write
-      contents: read
-      actions: read
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.0.0
-    with:
-      base64-subjects: "${{ needs.build.outputs.version }}"
-      provenance-name: provenance.intoto.jsonl
 
   # -------------------------------------------------------------------------
   publish-pypi:
