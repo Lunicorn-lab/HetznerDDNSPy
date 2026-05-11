@@ -29,9 +29,9 @@ jobs:
     steps:
       - uses: step-security/harden-runner@v2
         with: { egress-policy: audit }
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with: { persist-credentials: false }
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
           python-version: "3.12"
@@ -46,9 +46,9 @@ jobs:
     steps:
       - uses: step-security/harden-runner@v2
         with: { egress-policy: audit }
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with: { persist-credentials: false }
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
           python-version: "3.12"
@@ -66,9 +66,9 @@ jobs:
     steps:
       - uses: step-security/harden-runner@v2
         with: { egress-policy: audit }
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with: { persist-credentials: false }
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
           python-version: ${{ matrix.python }}
@@ -77,7 +77,7 @@ jobs:
         run: uv run pytest -ra
       - name: Upload coverage
         if: matrix.python == '3.12'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-xml
           path: coverage.xml
@@ -91,9 +91,9 @@ jobs:
     steps:
       - uses: step-security/harden-runner@v2
         with: { egress-policy: audit }
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with: { persist-credentials: false }
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
           python-version: "3.12"
@@ -110,9 +110,9 @@ jobs:
     steps:
       - uses: step-security/harden-runner@v2
         with: { egress-policy: audit }
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with: { persist-credentials: false }
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
           python-version: "3.12"
@@ -124,7 +124,7 @@ jobs:
         continue-on-error: false
       - name: Upload Bandit SARIF
         if: always()
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: bandit.sarif
           category: bandit
@@ -137,7 +137,7 @@ jobs:
           generateSarif: "1"
       - name: Upload Semgrep SARIF
         if: always() && hashFiles('semgrep.sarif') != ''
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: semgrep.sarif
           category: semgrep
@@ -149,9 +149,9 @@ jobs:
     steps:
       - uses: step-security/harden-runner@v2
         with: { egress-policy: audit }
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with: { persist-credentials: false }
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
           python-version: "3.12"
@@ -159,7 +159,7 @@ jobs:
       - name: pip-audit
         run: uv run pip-audit --disable-pip -l -v
       - name: OSV scanner
-        uses: google/osv-scanner-action/osv-scanner-action@v2.3.5
+        uses: google/osv-scanner-action/osv-scanner-action@v2.3.8
         with:
           scan-args: |-
             --recursive
@@ -173,7 +173,7 @@ jobs:
     steps:
       - uses: step-security/harden-runner@v2
         with: { egress-policy: audit }
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
           persist-credentials: false
@@ -191,7 +191,7 @@ jobs:
     steps:
       - uses: step-security/harden-runner@v2
         with: { egress-policy: audit }
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with: { persist-credentials: false }
       - name: Build image (local, no push)
         run: |
@@ -203,7 +203,7 @@ jobs:
             --tag hetzner-ddns:ci \
             .
       - name: Trivy vulnerability scan
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: hetzner-ddns:ci
           format: sarif
@@ -213,19 +213,19 @@ jobs:
           ignore-unfixed: true
       - name: Upload Trivy SARIF
         if: always()
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: trivy.sarif
           category: trivy
       - name: Grype vulnerability scan
-        uses: anchore/scan-action@v5
+        uses: anchore/scan-action@v7
         with:
           image: hetzner-ddns:ci
           fail-build: true
           severity-cutoff: high
           output-format: sarif
       - name: Dockerfile lint (Hadolint)
-        uses: hadolint/hadolint-action@v3.1.0
+        uses: hadolint/hadolint-action@v3.3.0
         with:
           dockerfile: docker/Dockerfile
           format: sarif
@@ -233,7 +233,7 @@ jobs:
           no-fail: true
       - name: Upload Hadolint SARIF
         if: always() && hashFiles('hadolint.sarif') != ''
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: hadolint.sarif
           category: hadolint
@@ -245,7 +245,7 @@ jobs:
     steps:
       - uses: step-security/harden-runner@v2
         with: { egress-policy: audit }
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with: { persist-credentials: false }
       - name: ShellCheck
         uses: ludeeus/action-shellcheck@2.0.0
@@ -261,9 +261,9 @@ jobs:
     steps:
       - uses: step-security/harden-runner@v2
         with: { egress-policy: audit }
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with: { persist-credentials: false }
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
           python-version: "3.12"
@@ -274,7 +274,7 @@ jobs:
           path: ./dist
           format: cyclonedx-json
           output-file: sbom.cdx.json
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: dist
           path: |
